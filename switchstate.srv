@@ -1,0 +1,5 @@
+# SwitchState.srv
+---
+bool[] states
+bool success
+string message

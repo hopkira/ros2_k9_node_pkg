@@ -1,0 +1,5 @@
+# LightsControl.srv
+int32[] lights
+---
+bool success
+string message
