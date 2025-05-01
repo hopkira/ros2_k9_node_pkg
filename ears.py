@@ -1,15 +1,17 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float32, Bool
+from std_srvs.srv import Trigger
 import serial
 import json
 import math
 import time
 
-class EarsNode(Node):
-    def __init__(self):
-        super().__init__('ears_node')
+class Ears:
+    """Class that communicates with the Espruino controlling K9's LIDAR ears"""
 
+    def __init__(self) -> None:
         self.ser = serial.Serial(
             port='/dev/ears',
             baudrate=115200,
@@ -20,56 +22,23 @@ class EarsNode(Node):
         )
         self.following = False
 
-        # Subscribe to ear commands
-        self.command_sub = self.create_subscription(
-            String,
-            'ears_command',
-            self.command_callback,
-            10
-        )
-
-        # Publishers
-        self.follow_dist_pub = self.create_publisher(Float32, 'ears/follow_distance', 10)
-        self.rotate_result_pub = self.create_publisher(Bool, 'ears/rotate_safe', 10)
-
-        self.get_logger().info('Ears node started.')
-
-    def command_callback(self, msg):
-        cmd = msg.data.lower()
-        if cmd == 'stop':
-            self.stop()
-        elif cmd == 'scan':
-            self.scan()
-        elif cmd == 'fast':
-            self.fast()
-        elif cmd == 'think':
-            self.think()
-        elif cmd == 'follow_read':
-            dist = self.follow_read()
-            self.follow_dist_pub.publish(Float32(data=dist))
-        elif cmd == 'safe_rotate':
-            safe = self.safe_rotate()
-            self.rotate_result_pub.publish(Bool(data=safe))
-        else:
-            self.get_logger().warn(f"Unknown command: {cmd}")
-
-    def __write(self, text: str):
-        self.get_logger().info(f"Ears command: {text}()")
+    def __write(self, text: str) -> None:
+        print("Ears:", text)
         self.ser.write(str.encode(text + "()\n"))
 
-    def stop(self):
+    def stop(self) -> None:
         self.following = False
         self.__write("stop")
 
-    def scan(self):
+    def scan(self) -> None:
         self.following = False
         self.__write("scan")
 
-    def fast(self):
+    def fast(self) -> None:
         self.following = False
         self.__write("fast")
 
-    def think(self):
+    def think(self) -> None:
         self.following = False
         self.__write("think")
 
@@ -87,34 +56,84 @@ class EarsNode(Node):
         duration = 4
         detected = False
         self.__write("fast")
-        end_time = time.time() + duration
+        end_scan = time.time() + duration
 
-        while time.time() < end_time and not detected:
-            try:
-                json_reading = self.ser.readline().decode("ascii")
-                reading = json.loads(json_reading)
-                dist = reading['distance']
-                angle = reading['angle']
-                x = abs(dist * math.cos(angle))
-                y = abs(dist * math.sin(angle))
-                if x <= safe_x and y <= safe_y:
-                    detected = True
-            except Exception as e:
-                self.get_logger().error(f"Error reading serial data: {e}")
+        while time.time() < end_scan and not detected:
+            json_reading = self.ser.readline().decode("ascii")
+            reading = json.loads(json_reading)
+            dist = reading['distance']
+            angle = reading['angle']
+            x = abs(dist * math.cos(angle))
+            y = abs(dist * math.sin(angle))
+            if x <= safe_x and y <= safe_y:
+                detected = True
 
         self.__write("stop")
         return not detected
 
+
+class EarsServiceNode(Node):
+    def __init__(self):
+        super().__init__('ears_service_node')
+        self.ears = Ears()
+
+        # Register services
+        self.create_service(Trigger, 'ears_stop', self.stop_cb)
+        self.create_service(Trigger, 'ears_scan', self.scan_cb)
+        self.create_service(Trigger, 'ears_fast', self.fast_cb)
+        self.create_service(Trigger, 'ears_think', self.think_cb)
+        self.create_service(Trigger, 'ears_follow_read', self.follow_read_cb)
+        self.create_service(Trigger, 'ears_safe_rotate', self.safe_rotate_cb)
+
+    # Callbacks
+    def stop_cb(self, request, response):
+        self.ears.stop()
+        response.success = True
+        response.message = "Stopped ears."
+        return response
+
+    def scan_cb(self, request, response):
+        self.ears.scan()
+        response.success = True
+        response.message = "Started scan."
+        return response
+
+    def fast_cb(self, request, response):
+        self.ears.fast()
+        response.success = True
+        response.message = "Set to fast mode."
+        return response
+
+    def think_cb(self, request, response):
+        self.ears.think()
+        response.success = True
+        response.message = "Set to think mode."
+        return response
+
+    def follow_read_cb(self, request, response):
+        try:
+            dist = self.ears.follow_read()
+            response.success = True
+            response.message = f"Distance: {dist:.2f} m"
+        except Exception as e:
+            response.success = False
+            response.message = f"Error reading distance: {str(e)}"
+        return response
+
+    def safe_rotate_cb(self, request, response):
+        try:
+            safe = self.ears.safe_rotate()
+            response.success = safe
+            response.message = "Safe to rotate." if safe else "Obstacle detected."
+        except Exception as e:
+            response.success = False
+            response.message = f"Error during rotation check: {str(e)}"
+        return response
+
+
 def main(args=None):
     rclpy.init(args=args)
-    node = EarsNode()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()
+    node = EarsServiceNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()

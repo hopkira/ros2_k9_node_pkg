@@ -1,0 +1,5 @@
+# SetBrightness.srv
+float32 level
+---
+bool success
+string message

@@ -19,15 +19,15 @@ class BackLightsNode(Node):
             timeout=1
         )
 
-        self.create_service(Trigger, 'back_lights/on', self.on_handler)
-        self.create_service(Trigger, 'back_lights/off', self.off_handler)
-        self.create_service(LightsControl, 'back_lights/turn_on', self.turn_on_handler)
-        self.create_service(LightsControl, 'back_lights/turn_off', self.turn_off_handler)
-        self.create_service(LightsControl, 'back_lights/toggle', self.toggle_handler)
-        self.create_service(Trigger, 'back_lights/tv_on', self.tv_on_handler)
-        self.create_service(Trigger, 'back_lights/tv_off', self.tv_off_handler)
-        self.create_service(SwitchState, 'back_lights/get_switch_state', self.get_switch_state_handler)
-        self.create_subscription(String, 'back_lights/cmd', self.cmd_callback, 10)
+        self.create_service(Trigger, 'back_lights_on', self.on_handler)
+        self.create_service(Trigger, 'back_lights_off', self.off_handler)
+        self.create_service(LightsControl, 'back_lights_turn_on', self.turn_on_handler)
+        self.create_service(LightsControl, 'back_lights_turn_off', self.turn_off_handler)
+        self.create_service(LightsControl, 'back_lights_toggle', self.toggle_handler)
+        self.create_service(Trigger, 'tv_on', self.tv_on_handler)
+        self.create_service(Trigger, 'tv_off', self.tv_off_handler)
+        self.create_service(SwitchState, 'back_lights_get_switch_state', self.get_switch_state_handler)
+        self.create_subscription(String, 'back_lights_cmd', self.cmd_callback, 10)
 
         self.get_logger().info("BackLightsNode is running.")
 

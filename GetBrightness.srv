@@ -1,0 +1,3 @@
+# GetBrightness.srv
+---
+float32 level
