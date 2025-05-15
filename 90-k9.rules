@@ -1,0 +1,5 @@
+ACTION=="add", ATTRS{idProduct}=="5740", ATTRS{idVendor}=="0483", SYMLINK+="ears"
+ACTION=="add", ATTRS{idProduct}=="ea60", ATTRS{idVendor}=="10c4", SYMLINK+="lidar360"
+ACTION=="add", ATTRS{idProduct}=="2404", ATTRS{idVendor}=="03eb", SYMLINK+="roboclaw"
+ACTION=="add", ATTRS{idProduct}=="01a8", ATTRS{idVendor}=="1546", SYMLINK+="k9gps"
+ACTION=="add", ATTRS{idProduct}=="0005", ATTRS{idVendor}=="2e8a", SYMLINK+="backpanel"
