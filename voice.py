@@ -3,7 +3,8 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
-from k9_voice.srv import Speak, CancelSpeech  # Updated to k9_voice package
+from Speak.srv import Speak
+from CancelSpeech.srv import CancelSpeech  # Updated to k9_voice package
 import threading
 import numpy as np
 import sounddevice as sd
